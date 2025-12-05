@@ -23,4 +23,4 @@ It allows you to upload one or more PDFs, ask questions, summarize content, and 
 ### 🧠 How It Works
 
 This app uses a standard **RAG pipeline**:
-
+PDF → Text Extraction → Chunking → Embedding → Vector Store → Retrieval → LLM Response
