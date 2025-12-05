@@ -1,6 +1,7 @@
 import os
 import re
 import tempfile
+import uuid                      # ✅ NEW: for unique Chroma collection
 from typing import List, Tuple
 
 import streamlit as st
@@ -42,7 +43,7 @@ else:
     bg = "#f8fafc"
     card_bg = "#ffffff"
     text = "#111827"
-    sidebar_bg = "#e5e7eb"
+    sidebar_bg = "#e5eeb"
 
 CUSTOM_CSS = f"""
 <style>
@@ -157,7 +158,6 @@ div[data-testid="stExpander"] > details {{
 }}
 </style>
 """
-
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 # ======================================================
@@ -179,28 +179,19 @@ This app is designed to implement a full **Retrieval-Augmented Generation (RAG)*
 # ======================================================
 @st.cache_resource(show_spinner=True)
 def get_embedding_model():
-    """
-    Sentence-level embedding model used for dense retrieval.
-    Small and fast → good for Streamlit Cloud.
-    """
+    """Sentence-level embedding model used for dense retrieval."""
     model_name = "sentence-transformers/all-MiniLM-L6-v2"
     return HuggingFaceEmbeddings(model_name=model_name)
 
 
 @st.cache_resource(show_spinner=True)
 def get_text_generator():
-    """
-    A single generative model (FLAN-T5-small) used for:
-    - Question answering
-    - Abstractive summarization
-    - Keyword / concept extraction
-    """
+    """FLAN-T5-small for QA / summarization / keyword extraction."""
     model_name = "google/flan-t5-small"
     return pipeline("text2text-generation", model=model_name, tokenizer=model_name)
 
 
 def generate_text(prompt: str, max_new_tokens: int = 256) -> str:
-    """Helper around the HuggingFace pipeline."""
     generator = get_text_generator()
     result = generator(
         prompt,
@@ -214,10 +205,6 @@ def generate_text(prompt: str, max_new_tokens: int = 256) -> str:
 # 5. HELPER: PERSONAL INFO REDACTION
 # ======================================================
 def redact_personal_info(text: str) -> str:
-    """
-    Very simple regex-based redaction to hide obvious personal identifiers
-    (signatures, roll numbers, explicit names lines).
-    """
     patterns = [
         r"signature of the student.*",
         r"signature of student.*",
@@ -234,10 +221,6 @@ def redact_personal_info(text: str) -> str:
 
 
 def truncate_text(text: str, max_chars: int = 4000) -> str:
-    """
-    HuggingFace small models have limited context window.
-    To avoid crashing, truncate very long contexts.
-    """
     if len(text) <= max_chars:
         return text
     return text[:max_chars]
@@ -295,15 +278,9 @@ mode = st.sidebar.radio(
 # 7. DOCUMENT LOADING & VECTOR STORE CREATION
 # ======================================================
 def load_and_split_pdfs(files) -> List[Document]:
-    """
-    1. Save each uploaded PDF to a temporary file
-    2. Load text using PyPDFLoader
-    3. Split into overlapping chunks with RecursiveCharacterTextSplitter
-    """
     all_docs: List[Document] = []
 
     for file in files:
-        # Save to a temporary file because PyPDFLoader expects a path
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
             tmp_file.write(file.read())
             tmp_path = tmp_file.name
@@ -312,7 +289,6 @@ def load_and_split_pdfs(files) -> List[Document]:
         pdf_docs = loader.load()
         all_docs.extend(pdf_docs)
 
-        # Clean up temp file
         os.remove(tmp_path)
 
     splitter = RecursiveCharacterTextSplitter(
@@ -328,16 +304,20 @@ def build_vector_store(docs: List[Document]) -> Chroma:
     """
     Build a fresh Chroma vector store from documents.
 
-    NOTE:
-    - persist_directory=None → no on-disk persistence.
-      Iska matlab har run me naya in-memory store banega,
-      old chunks accidentally reuse nahi honge.
+    IMPORTANT:
+    - persist_directory=None  →  no on-disk persistence
+    - collection_name is a fresh random UUID each time
+      → old PDFs ke chunks kisi aur collection me rahenge,
+        lekin current `vectordb` sirf NEW docs dekhega.
     """
     embeddings = get_embedding_model()
+    collection_name = f"pdf_rag_{uuid.uuid4().hex}"   # ✅ unique collection per run
+
     vectordb = Chroma.from_documents(
         documents=docs,
         embedding=embeddings,
-        persist_directory=None,  # ✅ important change to avoid old PDFs mixing
+        collection_name=collection_name,  # ✅ key line
+        persist_directory=None,
     )
     return vectordb
 
@@ -367,10 +347,6 @@ else:
 # 8. CORE RAG OPERATIONS
 # ======================================================
 def retrieve_with_scores(query: str, k: int = 4) -> List[Tuple[Document, float]]:
-    """
-    Wrapper around Chroma.similarity_search_with_score.
-    Returns (Document, similarity_score) pairs.
-    """
     assert vectordb is not None, "Vector store is not initialized."
     results = vectordb.similarity_search_with_score(query, k=k)
     return results
@@ -381,10 +357,6 @@ def build_context_from_results(
     redact: bool = True,
     max_chars: int = 4000,
 ) -> str:
-    """
-    Concatenate retrieved chunks into a single context string.
-    Optionally apply redaction and truncation.
-    """
     texts = []
     for doc, _score in results:
         chunk_text = doc.page_content
@@ -413,9 +385,8 @@ if mode in ["Question Answering", "Local Summary (based on question)", "Keyword 
         ),
     )
 else:
-    user_question = ""  # not needed for global summary
+    user_question = ""
 
-# ------------------ HANDLER ---------------------------
 if st.button("Run"):
     if not uploaded_files:
         st.warning("Please upload at least one PDF first.")
@@ -425,13 +396,11 @@ if st.button("Run"):
         st.warning("Please enter a query for this mode.")
     else:
         try:
-            # ========== GLOBAL SUMMARY ==========
             if mode == "Global Summary":
                 query = "overall summary and main contributions of the documents"
                 with st.spinner("🔎 Retrieving representative chunks and generating global summary..."):
                     results = retrieve_with_scores(query, k=max(top_k * 2, 6))
                     context = build_context_from_results(results, redact=redact_flag)
-
                     prompt = (
                         "You are summarizing a collection of PDF documents (e.g., project report / thesis / research papers).\n"
                         "Using ONLY the context below, generate a high-level summary describing:\n"
@@ -443,13 +412,11 @@ if st.button("Run"):
                     )
                     answer = generate_text(prompt, max_new_tokens=256)
 
-            # ========== QUESTION ANSWERING ==========
             elif mode == "Question Answering":
                 query = user_question.strip()
                 with st.spinner("🔎 Retrieving relevant chunks and generating answer..."):
                     results = retrieve_with_scores(query, k=top_k)
                     context = build_context_from_results(results, redact=redact_flag)
-
                     prompt = (
                         "You are an intelligent assistant helping with understanding PDF documents.\n"
                         "Answer the user's question using ONLY the information present in the context below.\n"
@@ -460,13 +427,11 @@ if st.button("Run"):
                     )
                     answer = generate_text(prompt, max_new_tokens=256)
 
-            # ========== LOCAL SUMMARY ==========
             elif mode == "Local Summary (based on question)":
                 query = user_question.strip()
                 with st.spinner("🔎 Retrieving relevant chunks and generating local summary..."):
                     results = retrieve_with_scores(query, k=top_k)
                     context = build_context_from_results(results, redact=redact_flag)
-
                     prompt = (
                         "You are summarizing only the parts of the PDFs that are relevant to the following query.\n"
                         "Using ONLY the context below, write a focused summary that answers what the user is interested in.\n\n"
@@ -476,13 +441,11 @@ if st.button("Run"):
                     )
                     answer = generate_text(prompt, max_new_tokens=256)
 
-            # ========== KEYWORD EXTRACTION ==========
-            else:  # "Keyword Extraction"
+            else:  # Keyword Extraction
                 query = user_question.strip()
                 with st.spinner("🔎 Retrieving relevant chunks and extracting keywords..."):
                     results = retrieve_with_scores(query, k=top_k)
                     context = build_context_from_results(results, redact=redact_flag)
-
                     prompt = (
                         "You are an NLP assistant performing keyword extraction.\n"
                         "From the context below, extract the most important **technical keywords and phrases** "
@@ -496,27 +459,19 @@ if st.button("Run"):
                     )
                     answer = generate_text(prompt, max_new_tokens=256)
 
-            # ----------------- DISPLAY ANSWER -----------------
             st.markdown("### ✅ Assistant Output")
             st.write(answer)
 
-            # ----------------- DISPLAY CONTEXT ----------------
             if mode != "Global Summary":
                 st.markdown("---")
                 st.markdown("### 🔍 Retrieved Context & Similarity Scores")
-                st.caption(
-                    "For transparency: these are the chunks retrieved from the PDFs that the model used."
-                )
+                st.caption("For transparency: these are the chunks retrieved from the PDFs that the model used.")
 
                 if "results" in locals():
                     with st.expander("View retrieved chunks", expanded=False):
                         for idx, (doc, score) in enumerate(results, start=1):
-                            src = doc.metadata.get("source", "unknown source")
                             page = doc.metadata.get("page", "?")
-
-                            st.markdown(
-                                f"**Chunk {idx} — page {page} — similarity score: {score:.4f}**"
-                            )
+                            st.markdown(f"**Chunk {idx} — page {page} — similarity score: {score:.4f}**")
 
                             chunk_text = doc.page_content
                             if redact_flag:
