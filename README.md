@@ -1,26 +1,27 @@
 # 📄 PDF Insight Assistant using RAG
 
-A powerful **PDF Understanding Tool** built with **RAG (Retrieval-Augmented Generation)** and **Streamlit**.  
-It allows you to upload one or more PDFs, ask questions, summarize content, and extract keywords using **retrieval + generative transformers**.
+A fully local, privacy-safe **PDF Analysis Tool** built using **Retrieval-Augmented Generation (RAG)** + **Streamlit**.  
+Upload multiple PDFs and ask questions, extract keywords, or generate summaries using transparent chunk retrieval.
 
 ---
 
-### 🚀 Features
+### 🧠 Features
 
-✔ Upload multiple PDFs  
-✔ Intelligent Question Answering using PDF content  
-✔ Local & Global Summarization  
-✔ Keyword Extraction grouped into categories  
-✔ View **retrieved chunks + similarity score + page number**  
-✔ Personal info redaction (privacy-safe)  
-✔ Tunable chunk size, overlap, top-k  
-✔ Light/Dark theme toggle  
-✔ Uses open-source HuggingFace models  
-✔ No data is stored (in-memory Chroma DB)
+| Feature | Description |
+|--------|-------------|
+| 🔎 Question Answering | Ask anything about one or more PDFs |
+| 📌 Local Summary | Summary based only on query-specific sections |
+| 🌎 Global Summary | High-level overview of entire PDFs |
+| 🏷 Keyword Extraction | Categorized keywords (concepts, algorithms, tools) |
+| 🧾 Chunk Display | Shows retrieved chunks + similarity score + page |
+| 🔐 Privacy Safe | Personal info redaction (roll no., name, signatures) |
+| 🎨 Theming | Light/Dark (Green) themes |
+| ⚙ Tunable Settings | Chunk size, overlap, Top-K retrieval |
 
 ---
 
-### 🧠 How It Works
+### 🏗 Architecture
 
-This app uses a standard **RAG pipeline**:
-PDF → Text Extraction → Chunking → Embedding → Vector Store → Retrieval → LLM Response
+The app follows a standard **RAG Pipeline**:
+
+PDF ➜ Text Extraction ➜ Chunking ➜ Embeddings ➜ Vector DB (Chroma) ➜ Retrieval ➜ LLM Output
