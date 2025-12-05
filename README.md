@@ -1,31 +1,26 @@
-# 📄 PDF Q&A Chatbot (LangChain + HuggingFace + Chroma)
+# 📄 PDF Insight Assistant using RAG
 
-An AI-powered chatbot that lets you upload one or more PDF files and ask questions about their content.
+A powerful **PDF Understanding Tool** built with **RAG (Retrieval-Augmented Generation)** and **Streamlit**.  
+It allows you to upload one or more PDFs, ask questions, summarize content, and extract keywords using **retrieval + generative transformers**.
+
+---
 
 ### 🚀 Features
-- Upload multiple PDFs
-- Smart text extraction and splitting
-- Embedding generation using Sentence Transformers
-- Chroma vector database for semantic search
-- HuggingFace QA model for intelligent answers
-- Fully modern UI (dark/light theme, rounded sliders, gradient buttons)
-- Deployable on Streamlit Cloud
+
+✔ Upload multiple PDFs  
+✔ Intelligent Question Answering using PDF content  
+✔ Local & Global Summarization  
+✔ Keyword Extraction grouped into categories  
+✔ View **retrieved chunks + similarity score + page number**  
+✔ Personal info redaction (privacy-safe)  
+✔ Tunable chunk size, overlap, top-k  
+✔ Light/Dark theme toggle  
+✔ Uses open-source HuggingFace models  
+✔ No data is stored (in-memory Chroma DB)
 
 ---
 
-## 🧠 How It Works
-1. You upload PDF(s)
-2. App extracts text and splits it into chunks
-3. Each chunk → embeddings generated
-4. Stored inside Chroma vector store
-5. When you ask a question → relevant chunks are retrieved
-6. HuggingFace QA model answers using exact PDF content
+### 🧠 How It Works
 
----
+This app uses a standard **RAG pipeline**:
 
-## 🛠️ Installation
-
-Clone the repository:
-```bash
-git clone https://github.com/ankitaarya456/pdf-qa-chatbot.git
-cd pdf-qa-chatbot
