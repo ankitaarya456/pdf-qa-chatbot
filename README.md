@@ -1,24 +1,27 @@
 # 📄 PDF Insight Assistant using RAG
 
-A fully local, privacy-safe **PDF Analysis Tool** built using **Retrieval-Augmented Generation (RAG)** + **Streamlit**.  
-Upload multiple PDFs and ask questions, extract keywords, or generate summaries using transparent chunk retrieval.
+A **context-aware, privacy-safe PDF Question Answering system** built using **Retrieval-Augmented Generation (RAG)** and **Streamlit**.  
+The app allows users to upload multiple PDFs and interact with them using natural language queries, summaries, and keyword extraction — with full transparency into retrieved document chunks.
+
+🔗 **Live App:** https://pdf-app-chatbot-ankita-arya.streamlit.app/
 
 ---
 
-### 🧠 Features
+## 🧠 Key Capabilities
 
 | Feature | Description |
-|--------|-------------|
-| 🔎 Question Answering | Ask anything about one or more PDFs |
-| 📌 Local Summary | Summary based only on query-specific sections |
-| 🌎 Global Summary | High-level overview of entire PDFs |
-| 🏷 Keyword Extraction | Categorized keywords (concepts, algorithms, tools) |
-| 🧾 Chunk Display | Shows retrieved chunks + similarity score + page |
-| 🔐 Privacy Safe | Personal info redaction (roll no., name, signatures) |
-| 🎨 Theming | Light/Dark (Green) themes |
-| ⚙ Tunable Settings | Chunk size, overlap, Top-K retrieval |
+|------|------------|
+| 🔎 Question Answering | Ask natural language questions across one or more PDFs |
+| 📌 Local Summary | Query-focused summaries using only relevant document sections |
+| 🌍 Global Summary | High-level summary of entire PDF collection |
+| 🏷 Keyword Extraction | Categorized technical keywords (concepts, methods, tools) |
+| 🧾 Chunk Transparency | Displays retrieved chunks with similarity scores & page numbers |
+| 🔐 Privacy Protection | Automatic redaction of names, roll numbers & signatures |
+| 🎨 Theming | Dark / Light (Green) UI themes |
+| ⚙ Tunable Retrieval | Control chunk size, overlap & Top-K retrieval |
 
 ---
+
 
 ### 🏗 Architecture
 
