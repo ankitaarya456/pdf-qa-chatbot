@@ -28,3 +28,7 @@ The app allows users to upload multiple PDFs and interact with them using natura
 The app follows a standard **RAG Pipeline**:
 
 PDF ➜ Text Extraction ➜ Chunking ➜ Embeddings ➜ Vector DB (Chroma) ➜ Retrieval ➜ LLM Output
+
+---
+## License
+This project is licensed under the Apache License 2.0.
