@@ -47,6 +47,10 @@ response generation**.
 
 ---
 
+## License
+This project is licensed under the Apache License 2.0.
+
+---
 ## 🏗 Architecture (RAG Pipeline)
 
 ```text
@@ -67,5 +71,3 @@ Relevance Validation
 LLM Generation (FLAN-T5)
 
 ---
-## License
-This project is licensed under the Apache License 2.0.
