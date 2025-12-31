@@ -69,5 +69,3 @@ Similarity-Based Retrieval (Top-K)
 Relevance Validation
    ↓
 LLM Generation (FLAN-T5)
-
----
