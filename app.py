@@ -23,7 +23,7 @@ st.set_page_config(
 )
 
 # ======================================================
-# UI STYLING (PROFESSIONAL DARK THEME)
+# 2. UI STYLING (PROFESSIONAL DARK THEME)
 # ======================================================
 CUSTOM_CSS = """
 <style>
@@ -89,13 +89,13 @@ div[data-testid="stExpander"] > details {
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 # ======================================================
-# TITLE
+# 3. TITLE
 # ======================================================
 st.title("📄 Multi-PDF Insight Assistant using RAG")
-st.caption("✅ Stable multi-document RAG with relevance guardrails")
+st.caption("✅ Stable multi-document RAG with strict relevance guardrails")
 
 # ======================================================
-# 2. MODELS
+# 4. MODELS
 # ======================================================
 @st.cache_resource
 def load_llm():
@@ -125,7 +125,7 @@ def generate_text(prompt: str, max_new_tokens: int = 256) -> str:
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 # ======================================================
-# 3. HELPERS
+# 5. HELPERS
 # ======================================================
 def redact_personal_info(text: str) -> str:
     patterns = [
@@ -145,11 +145,11 @@ def is_relevant(results: List[Tuple[Document, float]], threshold: float = 0.75) 
     """
     if not results:
         return False
-    good_hits = [score for _, score in results if score < threshold]
-    return len(good_hits) >= 2
+    relevant_hits = [score for _, score in results if score < threshold]
+    return len(relevant_hits) >= 2
 
 # ======================================================
-# 4. SIDEBAR
+# 6. SIDEBAR
 # ======================================================
 st.sidebar.header("📁 Upload PDFs")
 
@@ -163,13 +163,8 @@ chunk_size = st.sidebar.slider("Chunk size", 500, 2000, 1000, 100)
 chunk_overlap = st.sidebar.slider("Chunk overlap", 0, 500, 200, 50)
 top_k = st.sidebar.slider("Top-K chunks", 2, 10, 6)
 
-mode = st.sidebar.radio(
-    "Mode",
-    ["Question Answering", "Global Summary", "Local Summary", "Keyword Extraction"]
-)
-
 # ======================================================
-# 5. LOAD + SPLIT PDFs
+# 7. LOAD & SPLIT PDFs
 # ======================================================
 def load_and_split_pdfs(files) -> List[Document]:
     all_docs = []
@@ -195,7 +190,7 @@ def load_and_split_pdfs(files) -> List[Document]:
     return splitter.split_documents(all_docs)
 
 # ======================================================
-# 6. VECTOR STORE
+# 8. VECTOR STORE
 # ======================================================
 vectordb = None
 
@@ -206,8 +201,7 @@ if uploaded_files:
         vectordb = Chroma.from_documents(
             documents=docs,
             embedding=load_embeddings(),
-            collection_name=f"pdf_rag_{uuid.uuid4().hex}",
-            persist_directory=None
+            collection_name=f"pdf_rag_{uuid.uuid4().hex}"
         )
 
     st.success(f"✅ Loaded {len(uploaded_files)} PDFs → {len(docs)} chunks")
@@ -215,36 +209,26 @@ else:
     st.info("👈 Upload PDFs to begin")
 
 # ======================================================
-# 7. QUERY
+# 9. QUERY INPUT
 # ======================================================
-query = ""
-if mode != "Global Summary":
-    query = st.text_input("Enter your query:")
+query = st.text_input("Enter your question:")
 
 # ======================================================
-# 8. RUN
+# 10. RUN
 # ======================================================
 if st.button("Run"):
     if not vectordb:
         st.warning("Upload PDFs first")
-    elif mode != "Global Summary" and not query.strip():
-        st.warning("Enter a query")
+    elif not query.strip():
+        st.warning("Enter a question")
     else:
-        with st.spinner("🧠 Analyzing relevance..."):
-            query_used = (
-                "Provide an overall summary of all documents"
-                if mode == "Global Summary"
-                else query.strip()
-            )
+        with st.spinner("🧠 Retrieving relevant content..."):
+            results = vectordb.similarity_search_with_score(query, k=top_k)
 
-            results = vectordb.similarity_search_with_score(
-                query_used, k=top_k
-            )
-
-        if mode != "Global Summary" and not is_relevant(results):
+        if not is_relevant(results):
             st.error(
                 "❌ **Your question does not match the uploaded documents.**\n\n"
-                "👉 Please ask something specifically related to the PDFs. "
+                "👉 Please ask something clearly related to the PDF content."
             )
             st.stop()
 
@@ -259,8 +243,7 @@ if st.button("Run"):
         for src, texts in grouped.items():
             context += f"\n\nFrom PDF: {src}\n" + "\n".join(texts)
 
-        if mode == "Question Answering":
-            prompt = f"""
+        prompt = f"""
 Answer ONLY using the context below.
 If the answer is not present, say:
 "I cannot find this information in the provided documents."
@@ -269,31 +252,7 @@ Context:
 {context}
 
 Question:
-{query_used}
-"""
-        elif mode == "Keyword Extraction":
-            prompt = f"""
-Extract only technical keywords found in the documents.
-
-Context:
-{context}
-"""
-        elif mode == "Local Summary":
-            prompt = f"""
-Summarize ONLY the relevant sections related to the user focus.
-
-Context:
-{context}
-
-User focus:
-{query_used}
-"""
-        else:
-            prompt = f"""
-Provide a structured summary per document.
-
-Context:
-{context}
+{query}
 """
 
         with st.spinner("✍️ Generating answer..."):
