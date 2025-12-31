@@ -244,8 +244,7 @@ if st.button("Run"):
         if mode != "Global Summary" and not is_relevant(results):
             st.error(
                 "❌ **Your question does not match the uploaded documents.**\n\n"
-                "👉 Please ask something specifically related to the PDFs "
-                "(e.g. *MapReduce input formats*, *HDFS architecture*, *HBase data model*)."
+                "👉 Please ask something specifically related to the PDFs. "
             )
             st.stop()
 
